@@ -3,6 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
+from tkinterdnd2 import DND_FILES, TkinterDnD
 
 class FileCleanerApp:
     def __init__(self, root):
@@ -29,8 +30,11 @@ class FileCleanerApp:
         folder_frame.pack(fill=tk.X, pady=5)
         
         ttk.Label(folder_frame, text="文件夹路径:").pack(side=tk.LEFT)
-        self.folder_entry = ttk.Entry(folder_frame)
+        self.folder_entry = tk.Entry(folder_frame)
         self.folder_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        # 设置拖放
+        self.folder_entry.drop_target_register(DND_FILES)
+        self.folder_entry.dnd_bind('<<Drop>>', self.handle_drop)
         ttk.Button(folder_frame, text="浏览", command=self.browse_folder).pack(side=tk.LEFT)
         
         # 预设文件类型
@@ -73,6 +77,17 @@ class FileCleanerApp:
         self.log_text.pack(fill=tk.BOTH, expand=True)
         self.log_text.config(state=tk.DISABLED)
         
+    def handle_drop(self, event):
+        # 处理拖放的文件或文件夹
+        path = event.data
+        # 移除可能的引号和大括号
+        path = path.strip('{}').strip('"')
+        if os.path.exists(path):
+            if os.path.isfile(path):
+                path = os.path.dirname(path)
+            self.folder_entry.delete(0, tk.END)
+            self.folder_entry.insert(0, path)
+            
     def browse_folder(self):
         folder_path = filedialog.askdirectory()
         if folder_path:
@@ -161,7 +176,7 @@ class FileCleanerApp:
         self.delete_thread.start()
 
 def main():
-    root = tk.Tk()
+    root = TkinterDnD.Tk()
     app = FileCleanerApp(root)
     root.mainloop()
 
