@@ -17,8 +17,16 @@ class FileCleanerApp:
         self.style.configure("TFrame", background="#f0f0f0")
         self.style.configure("TLabel", background="#f0f0f0")
         self.style.configure("DropFrame.TFrame", background="#e3f2fd", relief="solid", borderwidth=2)
-        self.style.configure("Selected.TButton", background="#2196F3", foreground="white")
-        self.style.configure("Normal.TButton", background="#e0e0e0")
+        
+        # 自定义按钮样式
+        self.style.configure("Type.TButton", 
+                           padding=10,
+                           relief="flat",
+                           background="#e0e0e0",
+                           foreground="black")
+        self.style.map("Type.TButton",
+                      background=[("active", "#2196F3"), ("pressed", "#1976D2")],
+                      foreground=[("active", "white"), ("pressed", "white")])
         
         self.create_widgets()
         self.delete_thread = None
@@ -69,15 +77,21 @@ class FileCleanerApp:
         self.type_buttons = {}
         for ext, text in [('.lrc', '.lrc'), ('.txt', '.txt'), 
                          ('.log', '.log'), ('.tmp', '.tmp')]:
-            btn = ttk.Button(preset_frame, text=text, 
-                           command=lambda e=ext: self.toggle_type(e),
-                           style="Normal.TButton")
+            btn = tk.Button(preset_frame, text=text,
+                          command=lambda e=ext: self.toggle_type(e),
+                          bg="#e0e0e0",
+                          activebackground="#2196F3",
+                          activeforeground="white",
+                          relief="flat",
+                          padx=10,
+                          pady=5,
+                          font=("Arial", 10))
             btn.pack(side=tk.LEFT, padx=5)
             self.type_buttons[ext] = btn
         
         # 默认选中 .lrc
         self.selected_types = {'.lrc'}
-        self.type_buttons['.lrc'].configure(style="Selected.TButton")
+        self.type_buttons['.lrc'].configure(bg="#2196F3", fg="white")
         
         # 自定义类型
         custom_frame = ttk.Frame(type_frame)
@@ -113,10 +127,10 @@ class FileCleanerApp:
     def toggle_type(self, ext):
         if ext in self.selected_types:
             self.selected_types.remove(ext)
-            self.type_buttons[ext].configure(style="Normal.TButton")
+            self.type_buttons[ext].configure(bg="#e0e0e0", fg="black")
         else:
             self.selected_types.add(ext)
-            self.type_buttons[ext].configure(style="Selected.TButton")
+            self.type_buttons[ext].configure(bg="#2196F3", fg="white")
         
     def handle_drop(self, event):
         path = event.data
