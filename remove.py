@@ -9,90 +9,131 @@ class FileCleanerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("智能文件清理工具")
-        self.root.geometry("800x600")
+        self.root.geometry("900x700")
         
         # 设置主题颜色
         self.style = ttk.Style()
-        self.style.configure("TButton", padding=6, relief="flat", background="#2196F3")
+        self.style.configure("TButton", padding=6, relief="flat")
         self.style.configure("TFrame", background="#f0f0f0")
         self.style.configure("TLabel", background="#f0f0f0")
+        self.style.configure("DropFrame.TFrame", background="#e3f2fd", relief="solid", borderwidth=2)
+        self.style.configure("Selected.TButton", background="#2196F3", foreground="white")
+        self.style.configure("Normal.TButton", background="#e0e0e0")
         
         self.create_widgets()
         self.delete_thread = None
         
     def create_widgets(self):
         # 主框架
-        main_frame = ttk.Frame(self.root, padding="10")
+        main_frame = ttk.Frame(self.root, padding="20")
         main_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # 标题
+        title_label = ttk.Label(main_frame, text="智能文件清理工具", font=("Arial", 16, "bold"))
+        title_label.pack(pady=(0, 20))
         
         # 文件夹选择部分
         folder_frame = ttk.Frame(main_frame)
-        folder_frame.pack(fill=tk.X, pady=5)
+        folder_frame.pack(fill=tk.X, pady=10)
         
-        ttk.Label(folder_frame, text="文件夹路径:").pack(side=tk.LEFT)
-        self.folder_entry = tk.Entry(folder_frame)
-        self.folder_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        # 设置拖放
+        ttk.Label(folder_frame, text="文件夹路径:", font=("Arial", 10)).pack(side=tk.LEFT)
+        
+        # 拖放区域
+        self.drop_frame = ttk.Frame(folder_frame, style="DropFrame.TFrame")
+        self.drop_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        
+        self.folder_entry = tk.Entry(self.drop_frame, font=("Arial", 10))
+        self.folder_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, pady=10)
         self.folder_entry.drop_target_register(DND_FILES)
         self.folder_entry.dnd_bind('<<Drop>>', self.handle_drop)
-        ttk.Button(folder_frame, text="浏览", command=self.browse_folder).pack(side=tk.LEFT)
         
-        # 预设文件类型
-        preset_frame = ttk.LabelFrame(main_frame, text="预设文件类型", padding="5")
+        # 拖放提示标签
+        self.drop_label = ttk.Label(self.drop_frame, 
+                                  text="将文件或文件夹拖放到这里",
+                                  font=("Arial", 9),
+                                  foreground="gray")
+        self.drop_label.pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(folder_frame, text="浏览", command=self.browse_folder).pack(side=tk.LEFT, padx=5)
+        
+        # 文件类型选择部分
+        type_frame = ttk.LabelFrame(main_frame, text="文件类型选择", padding="10")
+        type_frame.pack(fill=tk.X, pady=10)
+        
+        # 预设类型按钮
+        preset_frame = ttk.Frame(type_frame)
         preset_frame.pack(fill=tk.X, pady=5)
         
-        self.lrc_var = tk.BooleanVar(value=True)
-        self.txt_var = tk.BooleanVar()
-        self.log_var = tk.BooleanVar()
-        self.tmp_var = tk.BooleanVar()
+        ttk.Label(preset_frame, text="预设类型:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
         
-        ttk.Checkbutton(preset_frame, text=".lrc", variable=self.lrc_var).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(preset_frame, text=".txt", variable=self.txt_var).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(preset_frame, text=".log", variable=self.log_var).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(preset_frame, text=".tmp", variable=self.tmp_var).pack(side=tk.LEFT, padx=5)
+        self.type_buttons = {}
+        for ext, text in [('.lrc', '.lrc'), ('.txt', '.txt'), 
+                         ('.log', '.log'), ('.tmp', '.tmp')]:
+            btn = ttk.Button(preset_frame, text=text, 
+                           command=lambda e=ext: self.toggle_type(e),
+                           style="Normal.TButton")
+            btn.pack(side=tk.LEFT, padx=5)
+            self.type_buttons[ext] = btn
+        
+        # 默认选中 .lrc
+        self.selected_types = {'.lrc'}
+        self.type_buttons['.lrc'].configure(style="Selected.TButton")
         
         # 自定义类型
-        custom_frame = ttk.LabelFrame(main_frame, text="自定义类型", padding="5")
+        custom_frame = ttk.Frame(type_frame)
         custom_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Label(custom_frame, text="扩展名（逗号分隔）:").pack(side=tk.LEFT)
-        self.custom_entry = ttk.Entry(custom_frame)
+        ttk.Label(custom_frame, text="自定义类型:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
+        self.custom_entry = ttk.Entry(custom_frame, font=("Arial", 10))
         self.custom_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Label(custom_frame, text="(用逗号分隔，例如: .bak, .old)", 
+                 font=("Arial", 9), foreground="gray").pack(side=tk.LEFT)
         
-        # 按钮和进度条
+        # 操作按钮和进度条
         button_frame = ttk.Frame(main_frame)
-        button_frame.pack(fill=tk.X, pady=5)
+        button_frame.pack(fill=tk.X, pady=10)
         
-        self.delete_button = ttk.Button(button_frame, text="开始删除", command=self.start_delete)
+        self.delete_button = ttk.Button(button_frame, text="开始删除", 
+                                      command=self.start_delete,
+                                      style="TButton")
         self.delete_button.pack(side=tk.LEFT, padx=5)
         
         self.progress = ttk.Progressbar(button_frame, mode='indeterminate')
         self.progress.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         
         # 日志区域
-        log_frame = ttk.LabelFrame(main_frame, text="操作日志", padding="5")
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        log_frame = ttk.LabelFrame(main_frame, text="操作日志", padding="10")
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=10)
         
-        self.log_text = ScrolledText(log_frame, height=15, wrap=tk.WORD)
+        self.log_text = ScrolledText(log_frame, height=15, wrap=tk.WORD,
+                                   font=("Consolas", 10))
         self.log_text.pack(fill=tk.BOTH, expand=True)
         self.log_text.config(state=tk.DISABLED)
         
+    def toggle_type(self, ext):
+        if ext in self.selected_types:
+            self.selected_types.remove(ext)
+            self.type_buttons[ext].configure(style="Normal.TButton")
+        else:
+            self.selected_types.add(ext)
+            self.type_buttons[ext].configure(style="Selected.TButton")
+        
     def handle_drop(self, event):
-        # 处理拖放的文件或文件夹
         path = event.data
-        # 移除可能的引号和大括号
         path = path.strip('{}').strip('"')
         if os.path.exists(path):
             if os.path.isfile(path):
                 path = os.path.dirname(path)
             self.folder_entry.delete(0, tk.END)
             self.folder_entry.insert(0, path)
+            self.drop_label.configure(text="已选择文件夹")
             
     def browse_folder(self):
         folder_path = filedialog.askdirectory()
         if folder_path:
             self.folder_entry.delete(0, tk.END)
             self.folder_entry.insert(0, folder_path)
+            self.drop_label.configure(text="已选择文件夹")
             
     def log_message(self, message):
         self.log_text.config(state=tk.NORMAL)
@@ -140,16 +181,7 @@ class FileCleanerApp:
             return
             
         # 收集所有扩展名
-        exts = []
-        # 预设类型
-        if self.lrc_var.get():
-            exts.append('.lrc')
-        if self.txt_var.get():
-            exts.append('.txt')
-        if self.log_var.get():
-            exts.append('.log')
-        if self.tmp_var.get():
-            exts.append('.tmp')
+        exts = list(self.selected_types)
         
         # 自定义类型
         custom_exts = [e.strip().lower() for e in self.custom_entry.get().split(',') if e.strip()]
