@@ -11,12 +11,20 @@ class FileCleanerApp:
         self.root.title("智能文件清理工具")
         self.root.geometry("900x700")
         
+        # 设置字体
+        self.title_font = ("Microsoft YaHei UI", 16, "bold")
+        self.header_font = ("Microsoft YaHei UI", 11)
+        self.normal_font = ("Microsoft YaHei UI", 10)
+        self.small_font = ("Microsoft YaHei UI", 9)
+        self.mono_font = ("Microsoft YaHei UI", 10)
+        
         # 设置主题颜色
         self.style = ttk.Style()
-        self.style.configure("TButton", padding=6, relief="flat")
+        self.style.configure("TButton", padding=6, relief="flat", font=self.normal_font)
         self.style.configure("TFrame", background="#f0f0f0")
-        self.style.configure("TLabel", background="#f0f0f0")
+        self.style.configure("TLabel", background="#f0f0f0", font=self.normal_font)
         self.style.configure("DropFrame.TFrame", background="#e3f2fd", relief="solid", borderwidth=2)
+        self.style.configure("TLabelframe.Label", font=self.header_font)
         
         # 自定义按钮样式
         self.style.configure("Type.TButton", 
@@ -37,20 +45,20 @@ class FileCleanerApp:
         main_frame.pack(fill=tk.BOTH, expand=True)
         
         # 标题
-        title_label = ttk.Label(main_frame, text="智能文件清理工具", font=("Arial", 16, "bold"))
+        title_label = ttk.Label(main_frame, text="智能文件清理工具", font=self.title_font)
         title_label.pack(pady=(0, 20))
         
         # 文件夹选择部分
         folder_frame = ttk.Frame(main_frame)
         folder_frame.pack(fill=tk.X, pady=10)
         
-        ttk.Label(folder_frame, text="文件夹路径:", font=("Arial", 10)).pack(side=tk.LEFT)
+        ttk.Label(folder_frame, text="文件夹路径:", font=self.header_font).pack(side=tk.LEFT)
         
         # 拖放区域
         self.drop_frame = ttk.Frame(folder_frame, style="DropFrame.TFrame")
         self.drop_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         
-        self.folder_entry = tk.Entry(self.drop_frame, font=("Arial", 10))
+        self.folder_entry = tk.Entry(self.drop_frame, font=self.normal_font)
         self.folder_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10, pady=10)
         self.folder_entry.drop_target_register(DND_FILES)
         self.folder_entry.dnd_bind('<<Drop>>', self.handle_drop)
@@ -58,7 +66,7 @@ class FileCleanerApp:
         # 拖放提示标签
         self.drop_label = ttk.Label(self.drop_frame, 
                                   text="将文件或文件夹拖放到这里",
-                                  font=("Arial", 9),
+                                  font=self.small_font,
                                   foreground="gray")
         self.drop_label.pack(side=tk.LEFT, padx=5)
         
@@ -72,7 +80,7 @@ class FileCleanerApp:
         preset_frame = ttk.Frame(type_frame)
         preset_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Label(preset_frame, text="预设类型:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(preset_frame, text="预设类型:", font=self.header_font).pack(side=tk.LEFT, padx=5)
         
         self.type_buttons = {}
         for ext, text in [('.lrc', '.lrc'), ('.txt', '.txt'), 
@@ -85,7 +93,7 @@ class FileCleanerApp:
                           relief="flat",
                           padx=10,
                           pady=5,
-                          font=("Arial", 10))
+                          font=self.normal_font)
             btn.pack(side=tk.LEFT, padx=5)
             self.type_buttons[ext] = btn
         
@@ -97,11 +105,11 @@ class FileCleanerApp:
         custom_frame = ttk.Frame(type_frame)
         custom_frame.pack(fill=tk.X, pady=5)
         
-        ttk.Label(custom_frame, text="自定义类型:", font=("Arial", 10)).pack(side=tk.LEFT, padx=5)
-        self.custom_entry = ttk.Entry(custom_frame, font=("Arial", 10))
+        ttk.Label(custom_frame, text="自定义类型:", font=self.header_font).pack(side=tk.LEFT, padx=5)
+        self.custom_entry = ttk.Entry(custom_frame, font=self.normal_font)
         self.custom_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
         ttk.Label(custom_frame, text="(用逗号分隔，例如: .bak, .old)", 
-                 font=("Arial", 9), foreground="gray").pack(side=tk.LEFT)
+                 font=self.small_font, foreground="gray").pack(side=tk.LEFT)
         
         # 操作按钮和进度条
         button_frame = ttk.Frame(main_frame)
@@ -120,7 +128,7 @@ class FileCleanerApp:
         log_frame.pack(fill=tk.BOTH, expand=True, pady=10)
         
         self.log_text = ScrolledText(log_frame, height=15, wrap=tk.WORD,
-                                   font=("Consolas", 10))
+                                   font=self.mono_font)
         self.log_text.pack(fill=tk.BOTH, expand=True)
         self.log_text.config(state=tk.DISABLED)
         
