@@ -111,6 +111,16 @@ class FileCleanerApp:
         ttk.Label(custom_frame, text="(用逗号分隔，例如: .bak, .old)", 
                  font=self.small_font, foreground="gray").pack(side=tk.LEFT)
         
+        # 模式选择
+        mode_frame = ttk.Frame(type_frame)
+        mode_frame.pack(fill=tk.X, pady=5)
+        self.recursive_mode = tk.BooleanVar(value=False)
+        self.recursive_check = ttk.Checkbutton(mode_frame, 
+                                             text="多层文件夹模式（包含子文件夹）",
+                                             variable=self.recursive_mode,
+                                             style="TCheckbutton")
+        self.recursive_check.pack(side=tk.LEFT, padx=5)
+        
         # 操作按钮和进度条
         button_frame = ttk.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=10)
@@ -169,17 +179,32 @@ class FileCleanerApp:
         errors = []
         
         try:
-            for filename in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, filename)
-                if os.path.isfile(file_path):
-                    file_ext = os.path.splitext(filename)[1].lower()
-                    if file_ext in exts:
-                        try:
-                            os.remove(file_path)
-                            self.log_message(f"已删除：{filename}")
-                            count += 1
-                        except Exception as e:
-                            errors.append(f"删除失败：{filename} - {str(e)}")
+            if self.recursive_mode.get():
+                # 多层文件夹模式
+                for root, dirs, files in os.walk(folder_path):
+                    for filename in files:
+                        file_path = os.path.join(root, filename)
+                        file_ext = os.path.splitext(filename)[1].lower()
+                        if file_ext in exts:
+                            try:
+                                os.remove(file_path)
+                                self.log_message(f"已删除：{os.path.relpath(file_path, folder_path)}")
+                                count += 1
+                            except Exception as e:
+                                errors.append(f"删除失败：{os.path.relpath(file_path, folder_path)} - {str(e)}")
+            else:
+                # 单层文件夹模式
+                for filename in os.listdir(folder_path):
+                    file_path = os.path.join(folder_path, filename)
+                    if os.path.isfile(file_path):
+                        file_ext = os.path.splitext(filename)[1].lower()
+                        if file_ext in exts:
+                            try:
+                                os.remove(file_path)
+                                self.log_message(f"已删除：{filename}")
+                                count += 1
+                            except Exception as e:
+                                errors.append(f"删除失败：{filename} - {str(e)}")
             
             self.log_message(f"操作完成，共删除 {count} 个文件")
             if errors:
